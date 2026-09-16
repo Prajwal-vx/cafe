@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Koshi Cafe Finder | Enjoy Your Weekend Across Eastern Nepal</title>
+  <meta name="description" content="Discover the best coffee shops, aesthetic cafes, and weekend hangout spots in Koshi Province, Nepal — Dharan, Biratnagar, Itahari, Birtamod, Damak, Ilam & Dhankuta." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <!-- Floating Steam Background Canvas -->
+  <canvas id="steamCanvas" class="steam-canvas-container"></canvas>
+
+  <!-- NAVIGATION BAR -->
+  <header class="navbar">
+    <div class="nav-content">
+      <a href="#" class="logo-group">
+        <div class="logo-cup">☕</div>
+        <div class="logo-text">
+          <h1>Koshi Cafes <span class="logo-badge">Eastern Nepal</span></h1>
+          <div class="logo-sub">Curated Weekend Cafe Guide</div>
+        </div>
+      </a>
+
+      <div class="nav-actions">
+        <!-- Ambient Sound Toggle -->
+        <button id="soundToggleBtn" class="nav-btn sound-toggle" title="Play relaxing cafe rain ambience">
+          <span>☕</span> Ambience
+        </button>
+
+        <!-- Weekend Roulette -->
+        <button id="surpriseBtn" class="nav-btn" title="Pick a random cafe for your weekend">
+          <span>🎲</span> Surprise Me!
+        </button>
+
+        <!-- Saved Favorites -->
+        <button id="favToggleBtn" class="nav-btn" title="View your saved weekend spots">
+          <span>❤️</span> Wishlist <span id="favBadgeCount" class="badge-count">0</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" class="nav-btn" title="Toggle Dark/Light Mode">
+          <span>🌙</span> Dark
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero-section">
+    <div class="hero-pill">
+      <span>✨</span> Complete Guide Across All 14 Districts of Eastern Nepal
+    </div>
+    <h2 class="hero-title">
+      Every Cafe in Birtamod &amp; Across All <span>14 Districts of Eastern Nepal</span>
+    </h2>
+    <p class="hero-subtitle">
+      Explore every prominent cafe in Birtamod, plus curated spots across Jhapa, Morang, Sunsari, Ilam, Dhankuta, Panchthar, Taplejung, Sankhuwasabha, Bhojpur, Terhathum, Udayapur, Khotang, Okhaldhunga &amp; Solukhumbu.
+    </p>
+
+    <div class="hero-cta-group">
+      <button class="btn-primary" id="heroSurpriseBtn">
+        <span>🎲</span> Spin Weekend Roulette
+      </button>
+      <a href="#exploreGrid" class="btn-secondary">
+        <span>☕</span> Browse All 14 Districts
+      </a>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+      <div class="stat-item">
+        <span class="stat-number">35+</span> Verified Cafes
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">14</span> Districts in Eastern Nepal
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">11+</span> Birtamod Cafes Included
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">4.7★</span> Average Guest Rating
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN APPLICATION CONTENT -->
+  <main class="main-wrapper" id="exploreGrid">
+
+    <!-- SEARCH & FILTER CONTROLS -->
+    <section class="controls-panel">
+      <!-- Search & Sort Row -->
+      <div class="search-sort-row">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search cafe by name, area, specialty (e.g. 'Pour-over', 'Momo', 'WiFi')..." 
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="sort-select-group">
+          <label for="sortSelect">Sort By:</label>
+          <select id="sortSelect">
+            <option value="rating-desc">Highest Rated (★)</option>
+            <option value="reviews-desc">Most Reviewed</option>
+            <option value="price-asc">Price: Low to High (रु)</option>
+            <option value="price-desc">Price: High to Low (रुरु)</option>
+            <option value="name-asc">Alphabetical (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- City Filter Tabs -->
+      <div class="city-tabs" id="cityTabs">
+        <!-- Dynamically rendered by app.js -->
+      </div>
+
+      <!-- Vibe Filter Chips -->
+      <div class="vibe-row">
+        <span class="vibe-label">Mood:</span>
+        <div id="vibeChips" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <!-- Dynamically rendered by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW HEADER (Results Count & Map Toggle) -->
+    <div class="view-header">
+      <div class="results-info">
+        Showing <span id="resultsCount" class="results-count">0</span> cafes for your weekend
+      </div>
+
+      <div class="view-toggle-btns">
+        <button id="mapToggleBtn" class="view-btn active" title="Toggle Map Visibility">
+          <span>🗺️</span> Interactive Map
+        </button>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE MAP CONTAINER -->
+    <div class="map-container-wrapper" id="mapWrapper">
+      <div id="koshiMap"></div>
+      <div class="map-legend">
+        <span>☕</span> Click pins to preview cafe and jump to card
+      </div>
+    </div>
+
+    <!-- CAFES CARDS GRID -->
+    <section class="cafes-grid" id="cafesGrid">
+      <!-- Dynamically populated by app.js -->
+    </section>
+
+    <!-- CURATED WEEKEND ROAD-TRIP ITINERARIES -->
+    <section class="itineraries-section">
+      <div class="section-header">
+        <div class="section-tag">Weekend Escapes</div>
+        <h3 class="section-title">Ready-Made Weekend Road Trips in Koshi</h3>
+        <p class="section-desc">
+          Combine coffee, scenic drives, and mouthwatering local cuisine with these handpicked weekend trails.
+        </p>
+      </div>
+
+      <div class="itinerary-cards-grid">
+        <!-- Trail 1 -->
+        <div class="itinerary-card">
+          <span class="itin-badge">Scenic Hills &amp; Mist Trail</span>
+          <h4 class="itin-title">Dharan to Bhedetar Cloud Escape</h4>
+          <p class="itin-desc">
+            Escape the lowlands for crisp mountain fog, panoramic views of the Koshi valley, and Dharan's famous sekuwa.
+          </p>
+          <ul class="itin-stops">
+            <li class="itin-stop">
+              <span class="stop-marker">1</span>
+              <div class="stop-content">
+                <strong>Morning: D Best Coffee (Dharan)</strong>
+                <span>Single-origin Himalayan Arabica &amp; fresh croissants at Bhanu Chowk.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">2</span>
+              <div class="stop-content">
+                <strong>Lunch: LevelUp Restro (Vijayapur)</strong>
+                <span>Spectacular hill terrace view with momos and iced americanos.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">3</span>
+              <div class="stop-content">
+                <strong>Late Afternoon: Bhedetar Cloud Nine &amp; Charles Point</strong>
+                <span>Watch rolling clouds engulf the ridge while sipping spiced hot chocolate.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Trail 2 -->
+        <div class="itinerary-card">
+          <span class="itin-badge">Tea Gardens &amp; Mountain Air</span>
+          <h4 class="itin-title">Ilam &amp; Kanyam Green Retreat</h4>
+          <p class="itin-desc">
+            A serene weekend journey through endless emerald tea bushes, cool breezes, and organic orthodox teas.
+          </p>
+          <ul class="itin-stops">
+            <li class="itin-stop">
+              <span class="stop-marker">1</span>
+              <div class="stop-content">
+                <strong>Midday: Kanyam Cloud View Cafe</strong>
+                <span>Fresh first-flush orthodox tea overlooking infinite tea estates &amp; spicy akabare.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">2</span>
+              <div class="stop-content">
+                <strong>Evening: Ilam Heritage Tea &amp; Coffee House</strong>
+                <span>Heritage wooden architecture, tea-tasting flights, and local chhurpi snacks.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">3</span>
+              <div class="stop-content">
+                <strong>Sunday Dawn: Antu Valley Sunrise Cafe</strong>
+                <span>Unforgettable sunrise view of Mt. Kanchenjunga with hot ginger-honey mountain coffee.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Trail 3 -->
+        <div class="itinerary-card">
+          <span class="itin-badge">Urban Gourmet &amp; Garden Hangouts</span>
+          <h4 class="itin-title">The Jhapa &amp; Sunsari Cafe Crawl</h4>
+          <p class="itin-desc">
+            Perfect for urban explorers, foodies, and remote workers who appreciate stylish design and wood-fired ovens.
+          </p>
+          <ul class="itin-stops">
+            <li class="itin-stop">
+              <span class="stop-marker">1</span>
+              <div class="stop-content">
+                <strong>Brunch: Mimiz Cafe (Birtamod)</strong>
+                <span>Pastel-toned aesthetic brunch with avocado toast and matcha lattes.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">2</span>
+              <div class="stop-content">
+                <strong>Afternoon: Oisi Coffee House (Damak)</strong>
+                <span>Damak’s favorite barista stop for artisan cappuccino and velvety tiramisu.</span>
+              </div>
+            </li>
+            <li class="itin-stop">
+              <span class="stop-marker">3</span>
+              <div class="stop-content">
+                <strong>Saturday Evening: Brikshya Cafe (Birtamod)</strong>
+                <span>Botanical sanctuary, live acoustic music, and authentic wood-fired pizzas.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CAFE DETAIL MODAL -->
+  <div class="modal-backdrop" id="cafeDetailModal">
+    <!-- Populated dynamically via app.js -->
+  </div>
+
+  <!-- WEEKEND ROULETTE / SPINNER MODAL -->
+  <div class="modal-backdrop" id="rouletteModal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModals()">✕</button>
+      <div class="roulette-container">
+        <h3 class="roulette-title">🎲 Weekend Cafe Decider</h3>
+        <p class="roulette-sub">Can't decide where to go this weekend? Let fate pick your cafe!</p>
+
+        <div class="roulette-slot-machine">
+          <div id="rouletteCafeName" class="slot-spinning-name">Ready for your weekend?</div>
+          <div id="rouletteCafeCity" class="slot-spinning-city">Hit Spin to pick your match</div>
+          <div id="rouletteCafeTip" class="slot-spinning-tip">Discover hidden gems across Koshi Province</div>
+        </div>
+
+        <button id="spinActionBtn" class="spin-btn">
+          <span>✨</span> Spin The Wheel!
+        </button>
+
+        <div id="rouletteActionArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SITE FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-logo">☕ Koshi Province Cafe Explorer</div>
+      <p class="footer-desc">
+        Crafted for coffee enthusiasts, weekend road-trippers, and chill seekers across Eastern Nepal.
+      </p>
+      <div class="footer-cities">
+        <span class="footer-city-tag">📍 Jhapa (Birtamod &amp; Damak)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Morang (Biratnagar)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Sunsari (Dharan &amp; Itahari)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Ilam</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Dhankuta &amp; Bhedetar</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Panchthar (Phidim)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Taplejung</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Sankhuwasabha (Khandbari)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Bhojpur</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Terhathum</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Udayapur (Gaighat)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Khotang (Diktel/Halesi)</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Okhaldhunga</span>
+        <span class="footer-city-tag">•</span>
+        <span class="footer-city-tag">📍 Solukhumbu (Namche &amp; Lukla)</span>
+      </div>
+      <div class="footer-copy">
+        Enjoy your weekend in Koshi Province! Stay caffeinated and inspired.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Cafe Data & Logic -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
