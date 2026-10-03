@@ -4,7 +4,25 @@
 // -------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Application State
+  const loadSavedFavorites = () => {
+    try {
+      const saved = localStorage.getItem('koshi_cafe_favorites');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch (error) {
+      console.warn('Recovered from unreadable favorites cache:', error);
+      return [];
+    }
+  };
+
+  const saveFavorites = (favorites) => {
+    try {
+      localStorage.setItem('koshi_cafe_favorites', JSON.stringify(favorites));
+    } catch (error) {
+      console.warn('Could not save favorites:', error);
+    }
+  };
+
   const state = {
     cafes: [...KOSHI_CAFES],
     filteredCafes: [...KOSHI_CAFES],
@@ -12,10 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     activeVibe: 'All',
     searchQuery: '',
     sortBy: 'rating-desc',
-    favorites: JSON.parse(localStorage.getItem('koshi_cafe_favorites') || '[]'),
+    favorites: loadSavedFavorites(),
     onlyFavorites: false,
-    map: null,
-    markers: {},
     audioContext: null,
     audioPlaying: false,
     audioGain: null
@@ -32,8 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const favToggleBtn = document.getElementById('favToggleBtn');
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   const soundToggleBtn = document.getElementById('soundToggleBtn');
-  const mapToggleBtn = document.getElementById('mapToggleBtn');
-  const mapWrapper = document.getElementById('mapWrapper');
   const cafeDetailModal = document.getElementById('cafeDetailModal');
   const rouletteModal = document.getElementById('rouletteModal');
   const surpriseBtn = document.getElementById('surpriseBtn');
@@ -43,10 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. INITIALIZE FLOATING STEAM CANVAS
   initSteamCanvas();
 
-  // 2. INITIALIZE MAP
-  initLeafletMap();
-
-  // 3. RENDER FILTER CONTROLS
+  // 2. RENDER FILTER CONTROLS
   renderCityTabs();
   renderVibeChips();
   updateFavoritesCount();
@@ -110,74 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
       requestAnimationFrame(animate);
     }
     animate();
-  }
-
-  function initLeafletMap() {
-    try {
-      // Center over Koshi Province spanning from Terai plains to Himalayas
-      state.map = L.map('koshiMap', {
-        scrollWheelZoom: false
-      }).setView([27.15, 87.25], 8);
-
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 18
-      }).addTo(state.map);
-
-      updateMapMarkers();
-    } catch (e) {
-      console.warn('Map initialization note:', e);
-    }
-  }
-
-  function updateMapMarkers() {
-    if (!state.map) return;
-
-    // Clear existing markers
-    Object.values(state.markers).forEach((m) => state.map.removeLayer(m));
-    state.markers = {};
-
-    const bounds = [];
-
-    state.filteredCafes.forEach((cafe) => {
-      const pinIcon = L.divIcon({
-        className: 'custom-pin-wrap',
-        html: `<div class="custom-pin" id="pin-${cafe.id}"><span>☕</span></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -32]
-      });
-
-      const marker = L.marker([cafe.lat, cafe.lng], { icon: pinIcon }).addTo(state.map);
-
-      const popupHtml = `
-        <div style="font-family: inherit; width: 230px; padding: 2px;">
-          <img src="${cafe.image}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 6px;" alt="${cafe.name}"/>
-          <h4 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700; color: #2b1e17;">${cafe.name}</h4>
-          <p style="margin: 0 0 6px 0; font-size: 11px; color: #725b4f;">📍 ${cafe.area}, ${cafe.city}</p>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="background: #fef3c7; color: #b45309; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 4px;">★ ${cafe.rating}</span>
-            <span style="font-size: 11px; font-weight: 700; color: #c86d2b;">${cafe.priceLevel}</span>
-          </div>
-          <button onclick="window.openDetailById('${cafe.id}')" style="width: 100%; padding: 5px; background: #c86d2b; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
-            Explore Cafe Details ↗
-          </button>
-        </div>
-      `;
-
-      marker.bindPopup(popupHtml);
-
-      marker.on('click', () => {
-        highlightCard(cafe.id);
-      });
-
-      state.markers[cafe.id] = marker;
-      bounds.push([cafe.lat, cafe.lng]);
-    });
-
-    if (bounds.length > 0) {
-      state.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-    }
   }
 
   function renderCityTabs() {
@@ -317,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsCount.textContent = result.length;
 
     renderCards(result);
-    updateMapMarkers();
   }
 
   function renderCards(cafes) {
@@ -335,15 +277,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     cafesGrid.innerHTML = cafes
-      .map((cafe) => {
+      .map((cafe, index) => {
         const isFav = state.favorites.includes(cafe.id);
-        const featuresBadges = cafe.features
+        const featuresBadges = (cafe.features || [])
           .slice(0, 3)
           .map((f) => `<span class="feature-tag">${f}</span>`)
           .join('');
 
         return `
-        <div class="cafe-card" id="card-${cafe.id}" onclick="openDetailModal('${cafe.id}')">
+        <div class="cafe-card reveal-card" id="card-${cafe.id}" data-index="${index}" onclick="openDetailModal('${cafe.id}')">
           <div class="card-img-wrap">
             <img src="${cafe.image}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';" alt="${cafe.name}" loading="lazy" />
             <div class="card-city-badge">
@@ -356,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
             <div class="card-price-tag">${cafe.priceLevel}</div>
           </div>
-          
+
           <div class="card-body">
             <div class="card-rating-row">
               <span class="rating-badge">★ ${cafe.rating}</span>
@@ -380,9 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              <span class="card-time">⏰ ${cafe.timing.split('(')[0]}</span>
-              <button class="card-action-btn" onclick="event.stopPropagation(); flyToAndShow('${cafe.id}')">
-                Show on Map ↗
+              <span class="card-time">⏰ ${(cafe.timing || '').split('(')[0]}</span>
+              <button class="card-action-btn" onclick="event.stopPropagation(); openDetailModal('${cafe.id}')">
+                View Details ↗
               </button>
             </div>
           </div>
@@ -390,6 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       })
       .join('');
+
+    const cards = cafesGrid.querySelectorAll('.reveal-card');
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 70}ms`;
+    });
   }
 
   function resetAllFilters() {
@@ -415,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.favorites.push(cafeId);
       msg = 'Added to weekend favorites! ❤️';
     }
-    localStorage.setItem('koshi_cafe_favorites', JSON.stringify(state.favorites));
+    saveFavorites(state.favorites);
     updateFavoritesCount();
     applyFiltersAndRender();
     showToast(msg);
@@ -441,30 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2400);
   }
 
-  // Map centering & highlight
-  window.flyToAndShow = function (cafeId) {
-    const cafe = state.cafes.find((c) => c.id === cafeId);
-    if (!cafe) return;
-
-    if (mapWrapper.classList.contains('collapsed')) {
-      mapWrapper.classList.remove('collapsed');
-      mapToggleBtn.classList.add('active');
-      state.map.invalidateSize();
-    }
-
-    state.map.flyTo([cafe.lat, cafe.lng], 14, { duration: 1.2 });
-    setTimeout(() => {
-      if (state.markers[cafe.id]) {
-        state.markers[cafe.id].openPopup();
-      }
-    }, 1250);
-
-    // Smooth scroll map into view on mobile
-    if (window.innerWidth < 768) {
-      mapWrapper.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   function highlightCard(cafeId) {
     const card = document.getElementById(`card-${cafeId}`);
     if (card) {
@@ -480,6 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.openDetailModal = function (cafeId) {
+    closeModals();
+
     const cafe = state.cafes.find((c) => c.id === cafeId);
     if (!cafe) return;
 
@@ -543,8 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="tel:${cafe.phone.replace(/[^0-9+]/g, '')}" class="modal-action-btn btn-phone">
               <span>📞</span> Call Cafe
             </a>
-            <button class="modal-action-btn" style="background: var(--accent-caramel); color: white; border: none;" onclick="flyToAndShow('${cafe.id}'); closeModals();">
-              <span>📍</span> Focus on Map
+            <button class="modal-action-btn" style="background: var(--accent-caramel); color: white; border: none;" onclick="closeModals();">
+              <span>☕</span> Keep Exploring
             </button>
           </div>
         </div>
@@ -555,12 +480,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.closeModals = function () {
-    cafeDetailModal.classList.remove('open');
-    rouletteModal.classList.remove('open');
+    if (cafeDetailModal) cafeDetailModal.classList.remove('open');
+    if (rouletteModal) rouletteModal.classList.remove('open');
   };
 
   // Close modals on backdrop click
   [cafeDetailModal, rouletteModal].forEach((modal) => {
+    if (!modal) return;
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeModals();
     });
@@ -568,7 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- WEEKEND ROULETTE / SPINNER ---
   function openRoulette() {
-    rouletteModal.classList.add('open');
+    const actionArea = document.getElementById('rouletteActionArea');
+    if (actionArea) actionArea.innerHTML = '';
+    if (rouletteModal) rouletteModal.classList.add('open');
   }
 
   function startSpin() {
@@ -722,15 +650,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('koshi_cafe_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     themeToggleBtn.innerHTML = savedTheme === 'dark' ? '<span>☀️</span> Light' : '<span>🌙</span> Dark';
-
-    // Map toggle button
-    mapToggleBtn.addEventListener('click', () => {
-      const isCollapsed = mapWrapper.classList.toggle('collapsed');
-      mapToggleBtn.classList.toggle('active', !isCollapsed);
-      if (!isCollapsed && state.map) {
-        setTimeout(() => state.map.invalidateSize(), 200);
-      }
-    });
 
     // Audio ambience toggle
     soundToggleBtn.addEventListener('click', toggleCafeAudio);
