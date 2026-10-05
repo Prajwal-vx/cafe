@@ -1,6 +1,6 @@
 # ☕ Koshi Province Cafe Explorer & Finder (All 14 Districts of Eastern Nepal)
 
-An animated, interactive web application and definitive cafe guide covering **all 14 districts of Eastern Nepal (Koshi Province)**, featuring every prominent cafe in **Birtamod** as well as top spots across **Jhapa, Morang, Sunsari, Ilam, Dhankuta, Panchthar, Taplejung, Sankhuwasabha, Bhojpur, Terhathum, Udayapur, Khotang, Okhaldhunga, and Solukhumbu**.
+An animated, interactive web app with cafe listings in **all 14 districts of Koshi Province, Nepal**, including 11 Birtamod listings and entries from **Jhapa, Morang, Sunsari, Ilam, Dhankuta, Panchthar, Taplejung, Sankhuwasabha, Bhojpur, Terhathum, Udayapur, Khotang, Okhaldhunga, and Solukhumbu**. Listing details and ratings are provided as site content and are not independently verified by the app.
 
 ---
 
@@ -91,17 +91,18 @@ An animated, interactive web application and definitive cafe guide covering **al
 
 ## 🌟 Web App Features
 
-- **Interactive Leaflet Map**: Centers over all 14 districts with custom interactive coffee pins.
-- **Dedicated Birtamod Special Tab**: Quick access to every single cafe in Birtamod.
+- **Dedicated Birtamod Special Tab**: Quick access to all 11 Birtamod listings.
 - **District Tabs for all 14 Districts**: Seamless one-click filtering.
 - **Weekend Roulette (Spin the Wheel)**: Randomizer with confetti effect.
 - **Web Audio API Procedural Rain Ambience**: Relaxing cafe sounds generated on the fly.
 - **Saved Favorites Wishlist**: LocalStorage bookmarking.
-- **Google Maps Navigation**: 1-click directions to every cafe.
+- **Google Maps Search**: Open a cafe search in Google Maps.
 
 ---
 
 ## 🚀 How to Run
 
-1. Open in browser: [http://localhost:8080](http://localhost:8080)
-2. Or double-click `index.html` directly.
+1. Open `index.html` directly in a browser.
+2. Or serve the project folder with a static file server and open the local address it provides. This repository does not include a server command.
+
+Run the security regression checks with `node --test security.test.js`.

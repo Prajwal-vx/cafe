@@ -5,20 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Koshi Cafe Finder | Enjoy Your Weekend Across Eastern Nepal</title>
   <meta name="description" content="Discover the best coffee shops, aesthetic cafes, and weekend hangout spots in Koshi Province, Nepal — Dharan, Biratnagar, Itahari, Birtamod, Damak, Ilam & Dhankuta." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-
-  <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
@@ -66,7 +60,7 @@
       <span>✨</span> Complete Guide Across All 14 Districts of Eastern Nepal
     </div>
     <h2 class="hero-title">
-      Every Cafe in Birtamod &amp; Across All <span>14 Districts of Eastern Nepal</span>
+      Explore Cafe Listings in Birtamod &amp; Across All <span>14 Districts of Eastern Nepal</span>
     </h2>
     <p class="hero-subtitle">
       Explore every prominent cafe in Birtamod, plus curated spots across Jhapa, Morang, Sunsari, Ilam, Dhankuta, Panchthar, Taplejung, Sankhuwasabha, Bhojpur, Terhathum, Udayapur, Khotang, Okhaldhunga &amp; Solukhumbu.
@@ -84,16 +78,16 @@
     <!-- Quick Stats -->
     <div class="quick-stats">
       <div class="stat-item">
-        <span class="stat-number">35+</span> Verified Cafes
+        <span class="stat-number">51</span> Cafe Listings
       </div>
       <div class="stat-item">
         <span class="stat-number">14</span> Districts in Eastern Nepal
       </div>
       <div class="stat-item">
-        <span class="stat-number">11+</span> Birtamod Cafes Included
+        <span class="stat-number">11</span> Birtamod Cafe Listings
       </div>
       <div class="stat-item">
-        <span class="stat-number">4.7★</span> Average Guest Rating
+        <span class="stat-number">4.7★</span> Mean Listed Rating
       </div>
     </div>
   </section>
@@ -135,13 +129,13 @@
       <!-- Vibe Filter Chips -->
       <div class="vibe-row">
         <span class="vibe-label">Mood:</span>
-        <div id="vibeChips" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <div id="vibeChips" class="vibe-chips">
           <!-- Dynamically rendered by app.js -->
         </div>
       </div>
     </section>
 
-    <!-- VIEW HEADER (Results Count & Map Toggle) -->
+    <!-- VIEW HEADER (Results Count) -->
     <div class="view-header">
       <div class="results-info">
         Showing <span id="resultsCount" class="results-count">0</span> cafes for your weekend
@@ -273,7 +267,7 @@
   <!-- WEEKEND ROULETTE / SPINNER MODAL -->
   <div class="modal-backdrop" id="rouletteModal">
     <div class="modal-card">
-      <button class="modal-close-btn" onclick="closeModals()">✕</button>
+      <button class="modal-close-btn" type="button" aria-label="Close dialog">✕</button>
       <div class="roulette-container">
         <h3 class="roulette-title">🎲 Weekend Cafe Decider</h3>
         <p class="roulette-sub">Can't decide where to go this weekend? Let fate pick your cafe!</p>
@@ -331,11 +325,13 @@
       </div>
       <div class="footer-copy">
         Enjoy your weekend in Koshi Province! Stay caffeinated and inspired.
+        <a href="privacy.html">Privacy notice</a>
       </div>
     </div>
   </footer>
 
   <!-- Cafe Data & Logic -->
+  <script src="security.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>

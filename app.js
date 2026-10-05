@@ -1,14 +1,47 @@
 // -------------------------------------------------------------
 // KOSHI PROVINCE CAFE FINDER - APPLICATION LOGIC
-// Interactive Map, Filters, Audio Ambiance & Weekend Roulette
+// Filters, Audio Ambiance & Weekend Roulette
 // -------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
+  const { escapeHtml, safeCafeId, safeCafeImage, validFavorites } = window.KoshiSecurity;
+  const fireConfetti = () => {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'roulette-confetti';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(canvas);
+    const context = canvas.getContext('2d');
+    const scale = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * scale;
+    canvas.height = window.innerHeight * scale;
+    context.scale(scale, scale);
+    const particles = Array.from({ length: 100 }, () => ({
+      x: window.innerWidth * 0.5, y: window.innerHeight * 0.55,
+      vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.8) * 12,
+      size: Math.random() * 7 + 3, color: ['#d97706', '#794025', '#fcd34d', '#fef3c7'][Math.floor(Math.random() * 4)]
+    }));
+    const started = performance.now();
+    const animate = (now) => {
+      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      particles.forEach((particle) => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.vy += 0.18;
+        context.fillStyle = particle.color;
+        context.fillRect(particle.x, particle.y, particle.size, particle.size * 0.65);
+      });
+      if (now - started < 1800) requestAnimationFrame(animate);
+      else canvas.remove();
+    };
+    requestAnimationFrame(animate);
+  };
+  const validCafeIds = new Set(KOSHI_CAFES.map((cafe) => cafe.id).filter((id) => /^[a-z0-9-]+$/.test(id)));
+
   const loadSavedFavorites = () => {
     try {
       const saved = localStorage.getItem('koshi_cafe_favorites');
       const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+      return validFavorites(parsed, validCafeIds);
     } catch (error) {
       console.warn('Recovered from unreadable favorites cache:', error);
       return [];
@@ -25,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const state = {
     cafes: [...KOSHI_CAFES],
-    filteredCafes: [...KOSHI_CAFES],
     activeCity: 'All',
     activeVibe: 'All',
     searchQuery: '',
@@ -124,39 +156,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderCityTabs() {
-    const districts = window.KOSHI_DISTRICTS || [
-      { id: 'All', name: 'All 14 Districts', count: state.cafes.length, icon: '✨' },
-      { id: 'Birtamod-Special', name: 'Birtamod Hub', count: state.cafes.filter(c => c.city === 'Birtamod').length, icon: '⭐' },
-      { id: 'Jhapa', name: 'Jhapa', count: state.cafes.filter(c => c.district === 'Jhapa').length, icon: '🌴' },
-      { id: 'Morang', name: 'Morang', count: state.cafes.filter(c => c.district === 'Morang').length, icon: '🏙️' },
-      { id: 'Sunsari', name: 'Sunsari', count: state.cafes.filter(c => c.district === 'Sunsari').length, icon: '☕' },
-      { id: 'Ilam', name: 'Ilam', count: state.cafes.filter(c => c.district === 'Ilam').length, icon: '🌱' },
-      { id: 'Dhankuta', name: 'Dhankuta', count: state.cafes.filter(c => c.district === 'Dhankuta').length, icon: '☁️' },
-      { id: 'Panchthar', name: 'Panchthar', count: state.cafes.filter(c => c.district === 'Panchthar').length, icon: '⛰️' },
-      { id: 'Taplejung', name: 'Taplejung', count: state.cafes.filter(c => c.district === 'Taplejung').length, icon: '🏔️' },
-      { id: 'Sankhuwasabha', name: 'Sankhuwasabha', count: state.cafes.filter(c => c.district === 'Sankhuwasabha').length, icon: '🍃' },
-      { id: 'Bhojpur', name: 'Bhojpur', count: state.cafes.filter(c => c.district === 'Bhojpur').length, icon: '🗡️' },
-      { id: 'Terhathum', name: 'Terhathum', count: state.cafes.filter(c => c.district === 'Terhathum').length, icon: '🌺' },
-      { id: 'Udayapur', name: 'Udayapur', count: state.cafes.filter(c => c.district === 'Udayapur').length, icon: '🌾' },
-      { id: 'Khotang', name: 'Khotang', count: state.cafes.filter(c => c.district === 'Khotang').length, icon: '🕉️' },
-      { id: 'Okhaldhunga', name: 'Okhaldhunga', count: state.cafes.filter(c => c.district === 'Okhaldhunga').length, icon: '🏞️' },
-      { id: 'Solukhumbu', name: 'Solukhumbu', count: state.cafes.filter(c => c.district === 'Solukhumbu').length, icon: '🏔️' }
-    ];
-
-    cityTabsContainer.innerHTML = districts
+    cityTabsContainer.innerHTML = KOSHI_DISTRICTS
       .map((d) => {
-        const count =
-          d.id === 'All'
-            ? state.cafes.length
-            : d.id === 'Birtamod-Special'
-            ? state.cafes.filter((x) => x.city === 'Birtamod').length
-            : state.cafes.filter((x) => x.district === d.id).length;
-
         const isActive = state.activeCity === d.id ? 'active' : '';
         return `
-        <button class="city-tab ${isActive}" data-city="${d.id}" title="Filter cafes in ${d.name}">
-          <span>${d.icon || '📍'}</span> ${d.name}
-          <span class="city-count">${count}</span>
+        <button class="city-tab ${isActive}" data-city="${escapeHtml(d.id)}" title="Filter cafes in ${escapeHtml(d.name)}">
+          <span>${escapeHtml(d.icon || '📍')}</span> ${escapeHtml(d.name)}
+          <span class="city-count">${d.count}</span>
         </button>
       `;
       })
@@ -186,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     vibeChipsContainer.innerHTML = vibes
       .map((v) => {
         const isActive = state.activeVibe === v ? 'active' : '';
-        return `<button class="vibe-chip ${isActive}" data-vibe="${v}">${v}</button>`;
+        return `<button class="vibe-chip ${isActive}" data-vibe="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
       })
       .join('');
 
@@ -256,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
     }
 
-    state.filteredCafes = result;
     resultsCount.textContent = result.length;
 
     renderCards(result);
@@ -277,44 +282,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     cafesGrid.innerHTML = cafes
-      .map((cafe, index) => {
+      .map((cafe) => {
         const isFav = state.favorites.includes(cafe.id);
         const featuresBadges = (cafe.features || [])
           .slice(0, 3)
-          .map((f) => `<span class="feature-tag">${f}</span>`)
+          .map((f) => `<span class="feature-tag">${escapeHtml(f)}</span>`)
           .join('');
 
         return `
-        <div class="cafe-card reveal-card" id="card-${cafe.id}" data-index="${index}" onclick="openDetailModal('${cafe.id}')">
+        <div class="cafe-card reveal-card" id="card-${safeCafeId(cafe.id)}" data-cafe-id="${safeCafeId(cafe.id)}">
           <div class="card-img-wrap">
-            <img src="${cafe.image}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';" alt="${cafe.name}" loading="lazy" />
+            <img src="${escapeHtml(safeCafeImage(cafe.image))}" alt="${escapeHtml(cafe.name)}" loading="lazy" />
             <div class="card-city-badge">
-              <span>📍</span> ${cafe.city}
+              <span>📍</span> ${escapeHtml(cafe.city)}
             </div>
-            <button class="favorite-btn ${isFav ? 'favorited' : ''}" 
-                    title="Save to weekend list" 
-                    onclick="event.stopPropagation(); toggleFavorite('${cafe.id}')">
+            <button class="favorite-btn ${isFav ? 'favorited' : ''}"
+                    aria-label="${isFav ? 'Remove from wishlist' : 'Save to wishlist'}"
+                    aria-pressed="${isFav}"
+                    data-action="favorite">
               ${isFav ? '♥' : '♡'}
             </button>
-            <div class="card-price-tag">${cafe.priceLevel}</div>
+            <div class="card-price-tag">${escapeHtml(cafe.priceLevel)}</div>
           </div>
 
           <div class="card-body">
             <div class="card-rating-row">
-              <span class="rating-badge">★ ${cafe.rating}</span>
-              <span class="review-count">${cafe.reviewsCount} Google reviews</span>
+              <span class="rating-badge">★ ${escapeHtml(cafe.rating)}</span>
+              <span class="review-count">${escapeHtml(cafe.reviewsCount)} listed reviews</span>
             </div>
 
-            <h3 class="card-title">${cafe.name}</h3>
+            <h3 class="card-title">${escapeHtml(cafe.name)}</h3>
             <div class="card-area">
-              <span>📌</span> ${cafe.area}
+              <span>📌</span> ${escapeHtml(cafe.area)}
             </div>
 
-            <p class="card-desc">${cafe.description}</p>
+            <p class="card-desc">${escapeHtml(cafe.description)}</p>
 
             <div class="signature-box">
               <span class="signature-label">Weekend Signature:</span>
-              ${cafe.signatureItem}
+              ${escapeHtml(cafe.signatureItem)}
             </div>
 
             <div class="features-tags">
@@ -322,8 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              <span class="card-time">⏰ ${(cafe.timing || '').split('(')[0]}</span>
-              <button class="card-action-btn" onclick="event.stopPropagation(); openDetailModal('${cafe.id}')">
+              <span class="card-time">⏰ ${escapeHtml((cafe.timing || '').split('(')[0])}</span>
+              <button class="card-action-btn" data-action="details">
                 View Details ↗
               </button>
             </div>
@@ -333,9 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .join('');
 
-    const cards = cafesGrid.querySelectorAll('.reveal-card');
-    cards.forEach((card, index) => {
-      card.style.animationDelay = `${index * 70}ms`;
+    cafesGrid.querySelectorAll('img').forEach((image) => {
+      image.addEventListener('error', () => { image.src = safeCafeImage(''); }, { once: true });
     });
   }
 
@@ -352,7 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Favorites logic
-  window.toggleFavorite = function (cafeId) {
+  function toggleFavorite(cafeId) {
+    if (!validCafeIds.has(cafeId)) return;
     const idx = state.favorites.indexOf(cafeId);
     let msg = '';
     if (idx > -1) {
@@ -381,28 +387,15 @@ document.addEventListener('DOMContentLoaded', () => {
       toast.className = 'toast-msg';
       document.body.appendChild(toast);
     }
-    toast.innerHTML = `<span>☕</span> ${text}`;
+    toast.replaceChildren(document.createTextNode('☕ '), document.createTextNode(text));
     toast.classList.add('show');
     setTimeout(() => {
       toast.classList.remove('show');
     }, 2400);
   }
 
-  function highlightCard(cafeId) {
-    const card = document.getElementById(`card-${cafeId}`);
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.classList.add('highlighted');
-      setTimeout(() => card.classList.remove('highlighted'), 1800);
-    }
-  }
-
   // Detail Modal
-  window.openDetailById = function (cafeId) {
-    openDetailModal(cafeId);
-  };
-
-  window.openDetailModal = function (cafeId) {
+  function openDetailModal(cafeId) {
     closeModals();
 
     const cafe = state.cafes.find((c) => c.id === cafeId);
@@ -414,51 +407,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cafeDetailModal.innerHTML = `
       <div class="modal-card">
-        <button class="modal-close-btn" onclick="closeModals()">✕</button>
+        <button class="modal-close-btn" type="button" aria-label="Close dialog">✕</button>
         <div class="modal-hero">
-          <img src="${cafe.image}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';" alt="${cafe.name}" />
+          <img src="${escapeHtml(safeCafeImage(cafe.image))}" alt="${escapeHtml(cafe.name)}" />
           <div class="modal-hero-overlay">
-            <h2>${cafe.name}</h2>
+            <h2>${escapeHtml(cafe.name)}</h2>
             <div class="modal-hero-meta">
-              <span>📍 ${cafe.area}, ${cafe.city}</span>
+              <span>📍 ${escapeHtml(cafe.area)}, ${escapeHtml(cafe.city)}</span>
               <span>•</span>
-              <span style="color: #fcd34d;">★ ${cafe.rating} (${cafe.reviewsCount} reviews)</span>
+              <span class="modal-rating">★ ${escapeHtml(cafe.rating)} (${escapeHtml(cafe.reviewsCount)} listed reviews)</span>
               <span>•</span>
-              <span>${cafe.priceLevel}</span>
+              <span>${escapeHtml(cafe.priceLevel)}</span>
             </div>
           </div>
         </div>
         <div class="modal-body">
-          <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-main);">${cafe.description}</p>
+          <p class="modal-description">${escapeHtml(cafe.description)}</p>
           
           <div class="weekend-tip-box">
             <h4>💡 Weekend Insider Tip</h4>
-            <p style="font-size: 0.88rem; color: var(--text-main);">${cafe.weekendTip}</p>
+            <p class="modal-copy">${escapeHtml(cafe.weekendTip)}</p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+          <div class="detail-grid">
             <div class="detail-box">
               <h4>☕ Signature Drink</h4>
-              <p style="font-size: 0.88rem; font-weight: 600;">${cafe.signatureItem}</p>
+              <p class="detail-value">${escapeHtml(cafe.signatureItem)}</p>
             </div>
             <div class="detail-box">
               <h4>🥐 Must-Try Food</h4>
-              <p style="font-size: 0.88rem; font-weight: 600;">${cafe.foodHighlight}</p>
+              <p class="detail-value">${escapeHtml(cafe.foodHighlight)}</p>
             </div>
           </div>
 
           <div class="detail-box">
             <h4>🏷️ Features & Vibe</h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem;">
-              ${cafe.features.map((f) => `<span class="feature-tag" style="padding: 4px 10px; font-size: 0.78rem;">✓ ${f}</span>`).join('')}
-              ${cafe.vibe.map((v) => `<span class="feature-tag" style="background: rgba(200, 109, 43, 0.15); color: var(--accent-caramel); padding: 4px 10px; font-size: 0.78rem;">✨ ${v}</span>`).join('')}
+            <div class="modal-tags">
+              ${cafe.features.map((f) => `<span class="feature-tag modal-feature-tag">✓ ${escapeHtml(f)}</span>`).join('')}
+              ${cafe.vibe.map((v) => `<span class="feature-tag modal-vibe-tag">✨ ${escapeHtml(v)}</span>`).join('')}
             </div>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
-            <div>⏰ <strong>Operating Hours:</strong> ${cafe.timing}</div>
-            <div>📞 <strong>Contact Phone:</strong> ${cafe.phone}</div>
-            <div>📸 <strong>Instagram:</strong> ${cafe.instagram}</div>
+          <div class="cafe-contact-info">
+            <div>⏰ <strong>Operating Hours:</strong> ${escapeHtml(cafe.timing)}</div>
+            <div>📞 <strong>Contact Phone:</strong> ${escapeHtml(cafe.phone)}</div>
+            <div>📸 <strong>Instagram:</strong> ${escapeHtml(cafe.instagram)}</div>
           </div>
 
           <div class="modal-actions">
@@ -468,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="tel:${cafe.phone.replace(/[^0-9+]/g, '')}" class="modal-action-btn btn-phone">
               <span>📞</span> Call Cafe
             </a>
-            <button class="modal-action-btn" style="background: var(--accent-caramel); color: white; border: none;" onclick="closeModals();">
+            <button class="modal-action-btn btn-dismiss modal-dismiss-btn" type="button">
               <span>☕</span> Keep Exploring
             </button>
           </div>
@@ -477,18 +470,21 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     cafeDetailModal.classList.add('open');
-  };
+    cafeDetailModal.querySelectorAll('img').forEach((image) => {
+      image.addEventListener('error', () => { image.src = safeCafeImage(''); }, { once: true });
+    });
+  }
 
-  window.closeModals = function () {
+  function closeModals() {
     if (cafeDetailModal) cafeDetailModal.classList.remove('open');
     if (rouletteModal) rouletteModal.classList.remove('open');
-  };
+  }
 
   // Close modals on backdrop click
   [cafeDetailModal, rouletteModal].forEach((modal) => {
     if (!modal) return;
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModals();
+      if (e.target === modal || e.target.closest('.modal-close-btn, .modal-dismiss-btn')) closeModals();
     });
   });
 
@@ -522,16 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const winner = state.cafes[Math.floor(Math.random() * state.cafes.length)];
         nameEl.textContent = `🎉 ${winner.name}!`;
         cityEl.textContent = `📍 ${winner.area}, ${winner.city} (${winner.priceLevel})`;
-        tipEl.innerHTML = `<strong>Weekend Tip:</strong> ${winner.weekendTip}`;
+        tipEl.innerHTML = `<strong>Weekend Tip:</strong> ${escapeHtml(winner.weekendTip)}`;
 
         // Fire confetti
-        if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 120,
-            spread: 70,
-            origin: { y: 0.6 }
-          });
-        }
+        fireConfetti();
 
         spinActionBtn.disabled = false;
         spinActionBtn.innerHTML = '<span>🔄</span> Spin Again!';
@@ -539,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Append view button
         const actionArea = document.getElementById('rouletteActionArea');
         actionArea.innerHTML = `
-          <button class="btn-primary" onclick="openDetailModal('${winner.id}')" style="margin-top: 1rem;">
-            Explore ${winner.name} ☕
+          <button class="btn-primary roulette-details-btn" type="button" data-cafe-id="${safeCafeId(winner.id)}">
+            Explore ${escapeHtml(winner.name)} ☕
           </button>
         `;
       }
@@ -613,6 +603,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- GENERAL EVENT LISTENERS ---
   function setupEventListeners() {
+    cafesGrid.addEventListener('click', (event) => {
+      const card = event.target.closest('.cafe-card');
+      if (!card) return;
+      const action = event.target.closest('[data-action]');
+      if (action?.dataset.action === 'favorite') {
+        event.stopPropagation();
+        toggleFavorite(card.dataset.cafeId);
+      } else if (action?.dataset.action === 'details') {
+        event.stopPropagation();
+        openDetailModal(card.dataset.cafeId);
+      } else if (!action && !event.target.closest('a, button')) {
+        openDetailModal(card.dataset.cafeId);
+      }
+    });
+
+    rouletteModal.addEventListener('click', (event) => {
+      const button = event.target.closest('.roulette-details-btn');
+      if (button) openDetailModal(button.dataset.cafeId);
+    });
+
     // Search input with debounce
     let searchTimeout;
     searchInput.addEventListener('input', (e) => {
@@ -643,11 +653,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', newTheme);
       themeToggleBtn.innerHTML = newTheme === 'dark' ? '<span>☀️</span> Light' : '<span>🌙</span> Dark';
-      localStorage.setItem('koshi_cafe_theme', newTheme);
+      try {
+        localStorage.setItem('koshi_cafe_theme', newTheme);
+      } catch (error) {
+        console.warn('Could not save theme:', error);
+      }
     });
 
     // Load saved theme
-    const savedTheme = localStorage.getItem('koshi_cafe_theme') || 'light';
+    let savedTheme = 'light';
+    try {
+      savedTheme = localStorage.getItem('koshi_cafe_theme') === 'dark' ? 'dark' : 'light';
+    } catch (error) {
+      console.warn('Could not read saved theme:', error);
+    }
     document.documentElement.setAttribute('data-theme', savedTheme);
     themeToggleBtn.innerHTML = savedTheme === 'dark' ? '<span>☀️</span> Light' : '<span>🌙</span> Dark';
 
