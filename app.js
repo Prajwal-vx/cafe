@@ -541,6 +541,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleCafeAudio() {
     if (!state.audioContext) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (typeof AudioCtx !== 'function') {
+        showToast('Audio ambience is not supported in this browser');
+        return;
+      }
       state.audioContext = new AudioCtx();
 
       // Create pink noise buffer for soft rain/chatter
