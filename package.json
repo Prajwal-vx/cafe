@@ -1,0 +1,12 @@
+{
+  "name": "koshi-cafe-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A static web app for exploring cafés across Koshi Province, Nepal.",
+  "scripts": {
+    "test": "node --test security.test.js",
+    "check": "node --test security.test.js",
+    "dev": "python3 -m http.server 4173",
+    "start": "python3 -m http.server 4173"
+  }
+}
