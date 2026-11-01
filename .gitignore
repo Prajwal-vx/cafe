@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Python leftovers (in case a backend is added later)
+venv/
+.venv/
+__pycache__/
+
+# Build artifacts
+build/
+dist/
+coverage/
+
+# Local temp files
+*.tmp
+*.bak
+
+# Generated caches
+.cache/
